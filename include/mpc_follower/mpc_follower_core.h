@@ -14,12 +14,7 @@
  * limitations under the License.
  */
 
-/**
- * @file moc_follower.h
- * @brief mpc follower class
- * @author Takamasa Horibe
- * @date 2019.05.01
- */
+//
 
 #pragma once
 #include <vector>
@@ -42,21 +37,20 @@
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/LU>
 
-#include <autoware_msgs/ControlCommandStamped.h>
-#include <autoware_msgs/Lane.h>
-#include <autoware_msgs/VehicleStatus.h>
+#include "mpc_follower/MPCPath.h"
+#include "std_msgs/Float32MultiArray.h"
 
-#include "mpc_follower/mpc_utils.h"
-#include "mpc_follower/mpc_trajectory.h"
-#include "mpc_follower/lowpass_filter.h"
-#include "mpc_follower/vehicle_model/vehicle_model_bicycle_kinematics.h"
-#include "mpc_follower/vehicle_model/vehicle_model_bicycle_dynamics.h"
-#include "mpc_follower/vehicle_model/vehicle_model_bicycle_kinematics_no_delay.h"
-#include "mpc_follower/qp_solver/qp_solver_unconstr.h"
-#include "mpc_follower/qp_solver/qp_solver_unconstr_fast.h"
-#include "mpc_follower/qp_solver/qp_solver_qpoases.h"
+#include "mpc_utils.h"
+#include "mpc_trajectory.h"
+#include "lowpass_filter.h"
+#include "vehicle_model/vehicle_model_bicycle_kinematics.h"
+#include "vehicle_model/vehicle_model_bicycle_dynamics.h"
+#include "vehicle_model/vehicle_model_bicycle_kinematics_no_delay.h"
+#include "qp_solver/qp_solver_unconstr.h"
+#include "qp_solver/qp_solver_unconstr_fast.h"
+#include "qp_solver/qp_solver_qpoases.h"
 
-/** 
+/**
  * @class MPC-based waypoints follower class
  * @brief calculate control command to follow reference waypoints
  */
@@ -87,7 +81,7 @@ private:
   Butterworth2dFilter lpf_steering_cmd_;                     //!< @brief lowpass filter for steering command
   Butterworth2dFilter lpf_lateral_error_;                    //!< @brief lowpass filter for lateral error to calculate derivatie
   Butterworth2dFilter lpf_yaw_error_;                        //!< @brief lowpass filter for heading error to calculate derivatie
-  autoware_msgs::Lane current_waypoints_;                    //!< @brief current waypoints to be followed
+  mpc_follower::MPCPath current_waypoints_;                    //!< @brief current waypoints to be followed
   std::shared_ptr<VehicleModelInterface> vehicle_model_ptr_; //!< @brief vehicle model for MPC
   std::string vehicle_model_type_;                           //!< @brief vehicle model type for MPC
   std::shared_ptr<QPSolverInterface> qpsolver_ptr_;          //!< @brief qp solver for MPC
@@ -153,17 +147,17 @@ private:
   /**
    * @brief set current_waypoints_ with receved message
    */
-  void callbackRefPath(const autoware_msgs::Lane::ConstPtr &);
+  void callbackRefPath(const mpc_follower::MPCPathConstPtr &);
 
   /**
-   * @brief set vehicle_status_.pose with receved message 
+   * @brief set vehicle_status_.pose with receved message
    */
   void callbackPose(const geometry_msgs::PoseStamped::ConstPtr &);
 
   /**
    * @brief set vehicle_status_.twist and vehicle_status_.tire_angle_rad with receved message
    */
-  void callbackVehicleStatus(const autoware_msgs::VehicleStatus &msg);
+  void callbackVehicleStatus(const std_msgs::Float32MultiArrayConstPtr &msg);
 
   /**
    * @brief publish control command calculated by MPC
@@ -220,4 +214,12 @@ private:
    * @brief callback for estimate twist for debug
    */
   void callbackEstimateTwist(const geometry_msgs::TwistStamped &msg) { estimate_twist_ = msg; }
+
+  inline double deg2rad(double _angle){
+      return _angle / 180 * M_PI;
+  }
+
+  inline double rad2deg(double _angle){
+      return _angle * 180 / M_PI;
+  }
 };

@@ -193,23 +193,17 @@ void MPCUtils::calcTrajectoryCurvature(MPCTrajectory &traj, int curvature_smooth
   }
 }
 
-void MPCUtils::convertWaypointsToMPCTraj(const autoware_msgs::Lane &lane, MPCTrajectory &mpc_traj)
+void MPCUtils::convertWaypointsToMPCTraj(const mpc_follower::MPCPath &lane, MPCTrajectory &mpc_traj)
 {
   mpc_traj.clear();
-  const double k_tmp = 0.0;
-  const double t_tmp = 0.0;
-  for (const auto &wp : lane.waypoints)
+  const int size = lane.x.size();
+  for (int i = 0; i < size; i++)
   {
-    const double x = wp.pose.pose.position.x;
-    const double y = wp.pose.pose.position.y;
-    const double z = wp.pose.pose.position.z;
-    const double yaw = tf2::getYaw(wp.pose.pose.orientation);
-    const double vx = wp.twist.twist.linear.x;
-    mpc_traj.push_back(x, y, z, yaw, vx, k_tmp, t_tmp);
+    mpc_traj.push_back(lane.x[i], lane.y[i], 0, lane.yaw[i], lane.vx[i], lane.k[i], lane.relative_time[i]);
   }
 }
 
-void MPCUtils::convertWaypointsToMPCTrajWithDistanceResample(const autoware_msgs::Lane &path, const std::vector<double> &path_time,
+void MPCUtils::convertWaypointsToMPCTrajWithDistanceResample(const mpc_follower::MPCPath &path, const std::vector<double> &path_time,
                                                              const double &dl, MPCTrajectory &ref_traj)
 {
   ref_traj.clear();
@@ -219,8 +213,8 @@ void MPCUtils::convertWaypointsToMPCTrajWithDistanceResample(const autoware_msgs
 
   for (int i = 1; i < (int)path_time.size(); ++i)
   {
-    double dx = path.waypoints.at(i).pose.pose.position.x - path.waypoints.at(i - 1).pose.pose.position.x;
-    double dy = path.waypoints.at(i).pose.pose.position.y - path.waypoints.at(i - 1).pose.pose.position.y;
+    double dx = path.x.at(i) - path.x.at(i - 1);
+    double dy = path.y.at(i) - path.y.at(i - 1);
     dist += sqrt(dx * dx + dy * dy);
     dists.push_back(dist);
   }
@@ -229,14 +223,14 @@ void MPCUtils::convertWaypointsToMPCTrajWithDistanceResample(const autoware_msgs
 }
 
 
-void MPCUtils::convertWaypointsToMPCTrajWithTimeResample(const autoware_msgs::Lane &path, const std::vector<double> &path_time,
+void MPCUtils::convertWaypointsToMPCTrajWithTimeResample(const mpc_follower::MPCPath &path, const std::vector<double> &path_time,
                                                          const double &dt, MPCTrajectory &ref_traj)
 {
   ref_traj.clear();
   convertWaypointsToMPCTrajWithResample(path, path_time, path_time, dt, ref_traj);
 }
 
-void MPCUtils::convertWaypointsToMPCTrajWithResample(const autoware_msgs::Lane &path, const std::vector<double> &path_time,
+void MPCUtils::convertWaypointsToMPCTrajWithResample(const mpc_follower::MPCPath &path, const std::vector<double> &path_time,
                                                      const std::vector<double> &ref_index, const double &d_ref_index, MPCTrajectory &ref_traj)
 {
   if (ref_index.size() == 0) {
@@ -264,45 +258,46 @@ void MPCUtils::convertWaypointsToMPCTrajWithResample(const autoware_msgs::Lane &
 
     const double a = point - ref_index.at(j - 1);
     const double ref_index_dist = ref_index.at(j) - ref_index.at(j - 1);
-    const geometry_msgs::Pose pos0 = path.waypoints.at(j - 1).pose.pose;
-    const geometry_msgs::Pose pos1 = path.waypoints.at(j).pose.pose;
-    const geometry_msgs::Twist twist0 = path.waypoints.at(j - 1).twist.twist;
-    const geometry_msgs::Twist twist1 = path.waypoints.at(j).twist.twist;
-    const double x = ((ref_index_dist - a) * pos0.position.x + a * pos1.position.x) / ref_index_dist;
-    const double y = ((ref_index_dist - a) * pos0.position.y + a * pos1.position.y) / ref_index_dist;
-    const double z = ((ref_index_dist - a) * pos0.position.z + a * pos1.position.z) / ref_index_dist;
+//    const geometry_msgs::Pose pos0 = path.waypoints.at(j - 1).pose.pose;
+//    const geometry_msgs::Pose pos1 = path.waypoints.at(j).pose.pose;
+//    const geometry_msgs::Twist twist0 = path.waypoints.at(j - 1).twist.twist;
+//    const geometry_msgs::Twist twist1 = path.waypoints.at(j).twist.twist;
+//    const double x = ((ref_index_dist - a) * pos0.position.x + a * pos1.position.x) / ref_index_dist;
+//    const double y = ((ref_index_dist - a) * pos0.position.y + a * pos1.position.y) / ref_index_dist;
+//    const double z = ((ref_index_dist - a) * pos0.position.z + a * pos1.position.z) / ref_index_dist;
 
     /* for singular point of euler angle */
-    const double yaw0 = tf2::getYaw(pos0.orientation);
-    const double dyaw = radianNormalize(tf2::getYaw(pos1.orientation) - yaw0);
-    const double yaw1 = yaw0 + dyaw;
-    const double yaw = ((ref_index_dist - a) * yaw0 + a * yaw1) / ref_index_dist;
-    const double vx = ((ref_index_dist - a) * twist0.linear.x + a * twist1.linear.x) / ref_index_dist;
-    const double curvature_tmp = 0.0;
-    const double t = ((ref_index_dist - a) * path_time.at(j - 1) + a * path_time.at(j)) / ref_index_dist;
-    ref_traj.push_back(x, y, z, yaw, vx, curvature_tmp, t);
-    point += d_ref_index;
+//    const double yaw0 = tf2::getYaw(pos0.orientation);
+//    const double dyaw = radianNormalize(tf2::getYaw(pos1.orientation) - yaw0);
+//    const double yaw1 = yaw0 + dyaw;
+//    const double yaw = ((ref_index_dist - a) * yaw0 + a * yaw1) / ref_index_dist;
+//    const double vx = ((ref_index_dist - a) * twist0.linear.x + a * twist1.linear.x) / ref_index_dist;
+//    const double curvature_tmp = 0.0;
+//    const double t = ((ref_index_dist - a) * path_time.at(j - 1) + a * path_time.at(j)) / ref_index_dist;
+//    ref_traj.push_back(x, y, z, yaw, vx, curvature_tmp, t);
+//    point += d_ref_index;
   }
 }
 
-void MPCUtils::calcPathRelativeTime(const autoware_msgs::Lane &path, std::vector<double> &path_time)
+void MPCUtils::calcPathRelativeTime(const mpc_follower::MPCPath &path, std::vector<double> &path_time)
 {
   double t = 0.0;
   path_time.clear();
   path_time.push_back(t);
-  for (int i = 0; i < (int)path.waypoints.size() - 1; ++i)
+  const int size = path.x.size();
+  for (int i = 0; i < size - 1; ++i)
   {
-    const double x0 = path.waypoints.at(i).pose.pose.position.x;
-    const double y0 = path.waypoints.at(i).pose.pose.position.y;
-    const double z0 = path.waypoints.at(i).pose.pose.position.z;
-    const double x1 = path.waypoints.at(i + 1).pose.pose.position.x;
-    const double y1 = path.waypoints.at(i + 1).pose.pose.position.y;
-    const double z1 = path.waypoints.at(i + 1).pose.pose.position.z;
+    const double x0 = path.x.at(i);
+    const double y0 = path.y.at(i);
+    const double z0 = 0;
+    const double x1 = path.x.at(i + 1);
+    const double y1 = path.y.at(i + 1);
+    const double z1 = 0;
     const double dx = x1 - x0;
     const double dy = y1 - y0;
     const double dz = z1 - z0;
     const double dist = sqrt(dx * dx + dy * dy + dz * dz);
-    double v = std::max(std::fabs(path.waypoints.at(i).twist.twist.linear.x), 1.0);
+    double v = std::max(std::fabs(path.vx.at(i)), 1.0);
     t += (dist / v);
     path_time.push_back(t);
   }
@@ -486,4 +481,24 @@ bool MPCUtils::calcNearestPoseInterp(const MPCTrajectory &traj, const geometry_m
 
   nearest_yaw_error = radianNormalize(my_yaw - nearest_yaw);
   return true;
+}
+
+double MPCUtils::radianNormalize(double _angle)
+{
+    double n_angle = std::fmod(_angle, 2 * M_PI);
+    n_angle = n_angle > M_PI ? n_angle - 2 * M_PI : n_angle < -M_PI ? 2 * M_PI + n_angle : n_angle;
+
+    // another way
+    // Math.atan2(Math.sin(_angle), Math.cos(_angle));
+    return n_angle;
+}
+
+double MPCUtils::find_distance(const geometry_msgs::Point &_from, const geometry_msgs::Point &_to)
+{
+    return std::hypot(std::hypot(_from.x - _to.x, _from.y - _to.y), _from.z - _to.z);
+}
+
+double MPCUtils::find_distance(const geometry_msgs::Pose &_from, const geometry_msgs::Pose &_to)
+{
+    return find_distance(_from.position, _to.position);
 }

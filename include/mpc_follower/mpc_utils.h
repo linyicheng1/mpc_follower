@@ -25,8 +25,8 @@
 #include <std_msgs/Float64MultiArray.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
-
 #include "mpc_trajectory.h"
+#include "mpc_follower/MPCPath.h"
 
 namespace MPCUtils
 {
@@ -78,7 +78,7 @@ void calcTrajectoryCurvature(MPCTrajectory &traj, int curvature_smoothing_num);
  * @param [in] path input waypoints
  * @param [out] mpc_traj converted traj
  */
-void convertWaypointsToMPCTraj(const autoware_msgs::Lane &path, MPCTrajectory &mpc_traj);
+void convertWaypointsToMPCTraj(const mpc_follower::MPCPath &path, MPCTrajectory &mpc_traj);
 
 /**
  * @brief convert waypoints to MPCTraj with interpolation
@@ -88,7 +88,7 @@ void convertWaypointsToMPCTraj(const autoware_msgs::Lane &path, MPCTrajectory &m
  * @param [in] d_ref_index constant distance of reference index
  * @param [out] ref_traj converted reference trajectory
  */
-void convertWaypointsToMPCTrajWithResample(const autoware_msgs::Lane &path, const std::vector<double> &path_time,
+void convertWaypointsToMPCTrajWithResample(const mpc_follower::MPCPath &path, const std::vector<double> &path_time,
                                            const std::vector<double> &ref_index, const double &d_ref_index, MPCTrajectory &ref_traj);
 
 /**
@@ -98,7 +98,7 @@ void convertWaypointsToMPCTrajWithResample(const autoware_msgs::Lane &path, cons
  * @param [in] dl distance of interpolated path
  * @param [out] ref_traj converted reference trajectory
  */
-void convertWaypointsToMPCTrajWithDistanceResample(const autoware_msgs::Lane &path, const std::vector<double> &path_time,
+void convertWaypointsToMPCTrajWithDistanceResample(const mpc_follower::MPCPath &path, const std::vector<double> &path_time,
                                                    const double &dl, MPCTrajectory &ref_traj);
 
 /**
@@ -108,7 +108,7 @@ void convertWaypointsToMPCTrajWithDistanceResample(const autoware_msgs::Lane &pa
  * @param [in] dt time span of interpolated path
  * @param [out] ref_traj converted reference trajectory
  */
-void convertWaypointsToMPCTrajWithTimeResample(const autoware_msgs::Lane &path, const std::vector<double> &path_time,
+void convertWaypointsToMPCTrajWithTimeResample(const mpc_follower::MPCPath &path, const std::vector<double> &path_time,
                                                const double &dt, MPCTrajectory &ref_traj_);
 
 /**
@@ -116,7 +116,7 @@ void convertWaypointsToMPCTrajWithTimeResample(const autoware_msgs::Lane &path, 
  * @param [in] path object waypoints
  * @param [out] path_time calculated waypoints time vector
  */
-void calcPathRelativeTime(const autoware_msgs::Lane &path, std::vector<double> &path_time);
+void calcPathRelativeTime(const mpc_follower::MPCPath &path, std::vector<double> &path_time);
 
 /**
  * @brief calculate nearest pose on MPCTrajectory
@@ -147,24 +147,12 @@ bool calcNearestPoseInterp(const MPCTrajectory &traj, const geometry_msgs::Pose 
                            unsigned int &nearest_index, double &min_dist_error, double &nearest_yaw_error, double &nearest_time);
 
 
-double radianNormalize(double _angle)
-{
-    double n_angle = std::fmod(_angle, 2 * M_PI);
-    n_angle = n_angle > M_PI ? n_angle - 2 * M_PI : n_angle < -M_PI ? 2 * M_PI + n_angle : n_angle;
-
-    // another way
-    // Math.atan2(Math.sin(_angle), Math.cos(_angle));
-    return n_angle;
-}
+double radianNormalize(double _angle);
 
 
-double find_distance(const geometry_msgs::Point &_from, const geometry_msgs::Point &_to)
-{
-    return std::hypot(std::hypot(_from.x - _to.x, _from.y - _to.y), _from.z - _to.z);
-}
-double find_distance(const geometry_msgs::Pose &_from, const geometry_msgs::Pose &_to)
-{
-    return find_distance(_from.position, _to.position);
-}
+
+double find_distance(const geometry_msgs::Point &_from, const geometry_msgs::Point &_to);
+
+double find_distance(const geometry_msgs::Pose &_from, const geometry_msgs::Pose &_to);
 
 }; // namespace MPCUtils

@@ -12,6 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
         tf2_ros
         geometry_msgs
         tf2
+        message_generation
+        std_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -49,11 +51,10 @@ include_directories(include/mpc_follower)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+ add_message_files(
+    FILES
+    MPCPath.msg
+ )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -70,10 +71,10 @@ include_directories(include/mpc_follower)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   std_msgs  # Or other packages containing msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -147,8 +148,8 @@ add_library(${PROJECT_NAME}
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/mpc_follower_node.cpp)
-add_executable(fake_localization_node src/demo/fake_localization.cpp src/demo/fale_localization_node.cpp)
+add_executable(${PROJECT_NAME}_node src/mpc_follower_node.cpp src/mpc_follower_core.cpp)
+add_executable(fake_localization_node src/demo/fake_localization.cpp src/demo/fake_localization_node.cpp)
 add_executable(trajectory_publisher_node src/demo/trajectory_publisher.cpp src/demo/trajectory_publisher_node.cpp)
 
 ## Rename C++ executable without prefix
@@ -164,9 +165,13 @@ add_executable(trajectory_publisher_node src/demo/trajectory_publisher.cpp src/d
 ## Specify libraries to link a library or executable target against
  target_link_libraries(${PROJECT_NAME}_node
    ${catkin_LIBRARIES}
+   ${PROJECT_NAME}
    /usr/local/lib/libqpOASES.a
  )
 target_link_libraries(fake_localization_node
+        ${catkin_LIBRARIES}
+        )
+target_link_libraries(trajectory_publisher_node
         ${catkin_LIBRARIES}
         )
 #############
